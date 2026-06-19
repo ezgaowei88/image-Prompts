@@ -781,9 +781,6 @@ function openEditModal(e, btn) {
   
   // Set preview image
   var imgSrc = 'images/' + editingCase.category + '/' + editingCase.image_folder + '/output.jpg';
-  if (editingCase.image_folder && editingCase.image_folder.startsWith('local_')) {
-    try { var sv = JSON.parse(localStorage.getItem('localImages') || '{}'); imgSrc = sv[editingCase.image_folder] || imgSrc; } catch(ex) {}
-  }
   document.getElementById('editPreviewImg').src = imgSrc;
   
   // Reset upload area
@@ -832,19 +829,19 @@ function saveEdit() {
   editingCase.model = document.getElementById('editModel').value.trim() || 'GPT-Image-2';
   editingCase.prompt = newPrompt;
   
-  // If new image uploaded, save it
+  // If new image uploaded, save it via API
   if (editImageData) {
-    // Save to localImages for local cases
-    if (editingCase.image_folder && editingCase.image_folder.startsWith('local_')) {
-      try {
-        var sv = JSON.parse(localStorage.getItem('localImages') || '{}');
-        sv[editingCase.image_folder] = editImageData;
-        localStorage.setItem('localImages', JSON.stringify(sv));
-      } catch(e) {}
-    }
+    // Upload to server for both local and built-in cases
+    fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({category:editingCase.category,folder:editingCase.image_folder,image:editImageData})})
+      .then(function(r){return r.json();})
+      .then(function(res){
+        if(res.error)console.error('Image save failed:',res.error);
+        else console.log('Image saved:',res.path);
+      })
+      .catch(function(err){console.error('Image save error:',err);});
   }
   // Update localCases metadata if it's a local case
-  if (editingCase.image_folder && editingCase.image_folder.startsWith('local_')) {
+  if (editingCase.image_folder && editingCase.image_folder.indexOf('_local_')>-1) {
     try {
       var lc = JSON.parse(localStorage.getItem('localCases') || '[]');
       for (var i = 0; i < lc.length; i++) {
@@ -871,13 +868,14 @@ function deleteCase() {
   // Remove from array
   allCases.splice(editingIndex, 1);
   
-  // Delete from localStorage if it's a local case
-  if (editingCase.image_folder && editingCase.image_folder.startsWith('local_')) {
-    try {
-      var sv = JSON.parse(localStorage.getItem('localImages') || '{}');
-      delete sv[editingCase.image_folder];
-      localStorage.setItem('localImages', JSON.stringify(sv));
-    } catch(e) {}
+  // Delete image folder via API
+  fetch('/api/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({category:editingCase.category,folder:editingCase.image_folder})})
+    .then(function(r){return r.json();})
+    .then(function(res){if(res.error)console.error('Delete failed:',res.error);else console.log('Deleted:',editingCase.category+'/'+editingCase.image_folder);})
+    .catch(function(err){console.error('Delete error:',err);});
+  
+  // Remove from localStorage if it's a local case
+  if (editingCase.image_folder && editingCase.image_folder.indexOf('_local_')>-1) {
     try {
       var lc = JSON.parse(localStorage.getItem('localCases') || '[]');
       lc = lc.filter(function(x){return x.image_folder !== editingCase.image_folder;});
@@ -903,7 +901,6 @@ function renderGrid(){
     var n=getCategoryName(ci.category);
     var s=ci.prompt?ci.prompt.substring(0,150)+(ci.prompt.length>150?'\u2026':''):'暂无提示词';
     var is='images/'+ci.category+'/'+ci.image_folder+'/output.jpg';
-    if(ci.image_folder&&ci.image_folder.startsWith('local_')){try{var sv=JSON.parse(localStorage.getItem('localImages')||'{}');is=sv[ci.image_folder]||is;}catch(e){}}
     var ck=getCaseKey(ci);
     var vc=getViewCount(ck);
     var vcCls=vc>=5?'view-count hot':'view-count';
@@ -975,22 +972,33 @@ function submitNewCase(){
   if(!t){alert('请填写标题');return;}
   if(!uploadedImageData){alert('请上传一张图片');return;}
   if(!p){alert('请填写提示词');return;}
-  var fn='local_'+Date.now();
+  var fn=c+'_case_local_'+Date.now();
   nextCaseNum++;
   var newCase={case_num:nextCaseNum,title:t,author:a||'',url:'',prompt:p,category:c,model:mdl,image_folder:fn};
-  allCases.unshift(newCase);
-  try{var sv=JSON.parse(localStorage.getItem('localImages')||'{}');sv[fn]=uploadedImageData;localStorage.setItem('localImages',JSON.stringify(sv));}catch(e){}
-  try{var lc=JSON.parse(localStorage.getItem('localCases')||'[]');lc.unshift(newCase);localStorage.setItem('localCases',JSON.stringify(lc));}catch(e){}
-  var ttl=allCases.length;
-  document.getElementById('totalCount').textContent=ttl+' 案例';
-  document.querySelectorAll('.tab[data-cat]').forEach(function(tab){
-    var cat=tab.dataset.cat;
-    var cs=tab.querySelector('.cat-count');
-    if(cs)cs.textContent=cat==='all'?ttl:allCases.filter(function(x){return x.category===cat;}).length;
-  });
-  closeAddModal();
-  document.getElementById('modalFormBody').innerHTML='<div class="modal-success"><div class="check">&#x1f389;</div><p>案例已添加！</p></div>';
-  setTimeout(function(){currentPage=1;currentCat='all';renderGrid();rebuildNavTabs();},300);
+  // Show uploading state
+  document.getElementById('modalFormBody').innerHTML='<div class="modal-success"><div class="check">&#x23F3;</div><p>正在保存图片到 images/'+c+'/'+fn+'/ ...</p></div>';
+  // Upload image to server via API
+  fetch('/api/upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({category:c,folder:fn,image:uploadedImageData})})
+    .then(function(r){return r.json();})
+    .then(function(res){
+      if(res.error){alert('保存失败: '+res.error);return;}
+      allCases.unshift(newCase);
+      try{var lc=JSON.parse(localStorage.getItem('localCases')||'[]');lc.unshift(newCase);localStorage.setItem('localCases',JSON.stringify(lc));}catch(e){}
+      var ttl=allCases.length;
+      document.getElementById('totalCount').textContent=ttl+' 案例';
+      document.querySelectorAll('.tab[data-cat]').forEach(function(tab){
+        var cat=tab.dataset.cat;
+        var cs=tab.querySelector('.cat-count');
+        if(cs)cs.textContent=cat==='all'?ttl:allCases.filter(function(x){return x.category===cat;}).length;
+      });
+      closeAddModal();
+      document.getElementById('modalFormBody').innerHTML='<div class="modal-success"><div class="check">&#x1f389;</div><p>案例已添加！图片已保存到 images/'+c+'/'+fn+'/output.jpg</p></div>';
+      setTimeout(function(){currentPage=1;currentCat='all';renderGrid();rebuildNavTabs();},300);
+    })
+    .catch(function(err){
+      alert('保存失败，请确保本地服务器正在运行 (python server.py)\n错误: '+err);
+      closeAddModal();
+    });
 }
 
 </script>
