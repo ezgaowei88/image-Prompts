@@ -51,6 +51,10 @@ nav .badge:hover{background:rgba(94,106,210,.2);border-color:rgba(94,106,210,.4)
 .card-body .meta{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .card-body .cat-badge{font-size:9px;color:var(--text4);padding:1px 5px;border-radius:3px;background:rgba(255,255,255,.04);border:1px solid var(--border)}
 .card-body .author{font-size:9px;color:var(--text4)}
+.card-body .view-count{font-size:9px;color:var(--text4);display:inline-flex;align-items:center;gap:3px;margin-left:auto}
+.card-body .view-count svg{width:11px;height:11px;flex-shrink:0;opacity:.7}
+.card-body .view-count.hot{color:var(--accent2)}
+.card-body .view-count.hot svg{opacity:1}
 .prompt-preview{margin-top:6px;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:10px;color:var(--text4);font-family:'JetBrains Mono','Fira Code',monospace;line-height:1.4;max-height:44px;overflow:hidden;cursor:pointer;position:relative}
 .prompt-preview:hover{color:var(--text3)}
 .prompt-preview::after{content:'';position:absolute;bottom:0;left:0;right:0;height:18px;background:linear-gradient(transparent,rgba(0,0,0,.5))}
@@ -270,6 +274,7 @@ footer a{color:var(--accent2);text-decoration:none}
     </div>
   </div>
   <div class="badge" id="totalCount">885 案例</div>
+  <div class="badge" id="totalViews" style="display:none;background:rgba(16,185,129,.12);border-color:rgba(16,185,129,.25);color:#34d399"></div>
 </nav>
 
 <div class="hero">
@@ -517,6 +522,15 @@ let currentPage = 1, currentCat = 'all', currentModel = 'all', searchQuery = '';
 let uploadedImageData = null, nextCaseNum = 1000;
 
 function esc(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\\"/g,'&quot;');}
+
+// View count statistics (localStorage-based, fully offline)
+function getCaseKey(ci){return ci.category+'_'+ci.case_num;}
+function getViewCounts(){try{return JSON.parse(localStorage.getItem('viewCounts')||'{}');}catch(e){return{};}}
+function getViewCount(key){var vc=getViewCounts();return vc[key]||0;}
+function incrementViewCount(key){var vc=getViewCounts();vc[key]=(vc[key]||0)+1;localStorage.setItem('viewCounts',JSON.stringify(vc));return vc[key];}
+function getTotalViews(){var vc=getViewCounts(),t=0;for(var k in vc)t+=vc[k];return t;}
+function updateTotalViewsBadge(){var el=document.getElementById('totalViews');if(el){var t=getTotalViews();el.textContent=t>0?('\u{1F441} '+t+' \u6b21\u6d4f\u89c8'):'';el.style.display=t>0?'':'none';}}
+function updateCardViewCount(key){var el=document.querySelector('.view-count[data-case-key="'+key+'"]');if(el){var n=getViewCount(key);var span=el.querySelector('span');if(span)span.textContent=n;if(n>=5)el.classList.add('hot');}}
 
 
 // Dynamic category/model management
@@ -867,7 +881,11 @@ function renderGrid(){
     var s=ci.prompt?ci.prompt.substring(0,150)+(ci.prompt.length>150?'\u2026':''):'暂无提示词';
     var is='images/'+ci.image_folder+'/output.jpg';
     if(ci.image_folder&&ci.image_folder.startsWith('local_')){try{var sv=JSON.parse(localStorage.getItem('localImages')||'{}');is=sv[ci.image_folder]||is;}catch(e){}}
-    return '<div class="card" data-category="'+ci.category+'"><div class="card-img"><img src="'+is+'" alt="'+esc(ci.title)+'" loading="lazy" onclick="openLightbox(this.src)" style="cursor:zoom-in"><span class="cat-tag">'+getModelIcon(ci.model)+'<span>'+(ci.model||'GPT-Image-2')+'</span></span><div class="edit-btn" onclick="openEditModal(event,this)" title="编辑"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div><div class="copy-float" onclick="copyPrompt(event,this)" title="复制提示词"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/><path d="M18 11v4a2 2 0 0 1-2 2h-4"/></svg></div></div><div class="card-body"><h3>'+esc(ci.title)+'</h3><div class="meta"><span class="cat-badge">'+n+'</span>'+(ci.author?'<span class="author">@'+esc(ci.author)+'</span>':'')+'</div><div class="prompt-preview" onclick="togglePrompt(this)">'+esc(s)+'</div>'+(ci.prompt?'<div class="prompt-full">'+esc(ci.prompt)+'</div>':'<div class="prompt-full" style="display:none">暂无</div>')+'</div></div>';
+    var ck=getCaseKey(ci);
+    var vc=getViewCount(ck);
+    var vcCls=vc>=5?'view-count hot':'view-count';
+    var eyeIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+    return '<div class="card" data-category="'+ci.category+'"><div class="card-img"><img src="'+is+'" alt="'+esc(ci.title)+'" loading="lazy" onclick="openLightbox(this.src,\''+ck+'\')" style="cursor:zoom-in"><span class="cat-tag">'+getModelIcon(ci.model)+'<span>'+(ci.model||'GPT-Image-2')+'</span></span><div class="edit-btn" onclick="openEditModal(event,this)" title="编辑"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></div><div class="copy-float" onclick="copyPrompt(event,this)" title="复制提示词"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/><path d="M18 11v4a2 2 0 0 1-2 2h-4"/></svg></div></div><div class="card-body"><h3>'+esc(ci.title)+'</h3><div class="meta"><span class="cat-badge">'+n+'</span>'+(ci.author?'<span class="author">@'+esc(ci.author)+'</span>':'')+'<span class="'+vcCls+'" data-case-key="'+ck+'">'+eyeIcon+'<span>'+vc+'</span></span></div><div class="prompt-preview" onclick="togglePrompt(this)">'+esc(s)+'</div>'+(ci.prompt?'<div class="prompt-full">'+esc(ci.prompt)+'</div>':'<div class="prompt-full" style="display:none">暂无</div>')+'</div></div>';
   }).join('');
   renderPagination(c.length,tp);
 }
@@ -896,8 +914,9 @@ function copyPrompt(e,btn){e.stopPropagation();var card=btn.closest('.card'),ful
 navigator.clipboard.writeText(text).then(function(){btn.classList.add('copied');btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';setTimeout(function(){btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/><path d="M18 11v4a2 2 0 0 1-2 2h-4"/></svg>';btn.classList.remove('copied');},2000);}).catch(function(){var ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);btn.classList.add('copied');btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>';setTimeout(function(){btn.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/><path d="M18 11v4a2 2 0 0 1-2 2h-4"/></svg>';btn.classList.remove('copied');},2000);});}
 renderGrid();
 toggleClearBtn('');
+updateTotalViewsBadge();
 
-function openLightbox(s){document.getElementById('lightbox-img').src=s;document.getElementById('lightbox').classList.add('active');document.body.style.overflow='hidden';}
+function openLightbox(s,key){document.getElementById('lightbox-img').src=s;document.getElementById('lightbox').classList.add('active');document.body.style.overflow='hidden';if(key){incrementViewCount(key);updateCardViewCount(key);updateTotalViewsBadge();}}
 function closeLightbox(){document.getElementById('lightbox').classList.remove('active');document.body.style.overflow='';}
 document.addEventListener('keydown',function(e){if(e.key==='Escape'){closeLightbox();closeAddModal();closeEditModal();}});
 function openAddModal(){
