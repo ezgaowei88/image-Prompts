@@ -787,7 +787,10 @@ function openEditModal(e, btn) {
   document.getElementById('editModal').classList.add('active');
   document.body.style.overflow = 'hidden';
   document.getElementById('editTitle').value = editingCase.title || '';
+  document.getElementById('editAuthor').value = editingCase.author || '';
   document.getElementById('editModel').value = editingCase.model || 'GPT-Image-2';
+  var catVal = editingCase.category || 'poster';
+  selectEditCat(catVal);
   document.getElementById('editPrompt').value = editingCase.prompt || '';
   
   // Set preview image
@@ -837,6 +840,8 @@ function saveEdit() {
   
   // Update data
   editingCase.title = newTitle;
+  editingCase.author = document.getElementById('editAuthor').value.trim();
+  editingCase.category = currentEditCat || 'poster';
   editingCase.model = document.getElementById('editModel').value.trim() || 'GPT-Image-2';
   editingCase.prompt = newPrompt;
   
@@ -858,6 +863,8 @@ function saveEdit() {
       for (var i = 0; i < lc.length; i++) {
         if (lc[i].image_folder === editingCase.image_folder) {
           lc[i].title = newTitle;
+          lc[i].author = document.getElementById('editAuthor').value.trim();
+          lc[i].category = currentEditCat || 'poster';
           lc[i].model = document.getElementById('editModel').value.trim() || 'GPT-Image-2';
           lc[i].prompt = newPrompt;
           break;
