@@ -62,9 +62,9 @@ nav .badge:hover{background:rgba(94,106,210,.2);border-color:rgba(94,106,210,.4)
 .card-body .view-count svg{width:11px;height:11px;flex-shrink:0;opacity:.7}
 .card-body .view-count.hot{color:var(--accent2)}
 .card-body .view-count.hot svg{opacity:1}
-.prompt-preview{margin-top:6px;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:10px;color:var(--text4);font-family:'JetBrains Mono','Fira Code',monospace;line-height:1.4;max-height:88px;overflow:hidden;cursor:pointer;position:relative;transition:color .15s}
+.prompt-preview{margin-top:6px;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:10px;color:var(--text4);font-family:'JetBrains Mono','Fira Code',monospace;line-height:1.4;max-height:120px;overflow:hidden;cursor:pointer;position:relative;transition:color .15s}
 .prompt-preview:hover{color:var(--text3)}
-.prompt-preview::after{content:'';position:absolute;bottom:0;left:0;right:0;height:36px;background:linear-gradient(transparent,rgba(0,0,0,.5))}
+.prompt-preview::after{content:'';position:absolute;bottom:0;left:0;right:0;height:48px;background:linear-gradient(transparent,rgba(0,0,0,.5))}
 .prompt-preview .expand-icon{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:12px;;background:linear-gradient(transparent,rgba(0,0,0,.5))}
 .prompt-preview .expand-icon{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:12px;height:12px;color:var(--text4);transition:transform .2s,color .15s;flex-shrink:0;animation:expandBounce 2s ease-in-out infinite}
 .prompt-preview:hover .expand-icon{color:var(--text3);animation:none}
@@ -960,7 +960,7 @@ function renderGrid(){
   var g=document.getElementById('grid');
   g.innerHTML=ps.map(function(ci){
     var n=getCategoryName(ci.category);
-    var s=ci.prompt?ci.prompt.substring(0,150)+(ci.prompt.length>150?'\u2026':''):'暂无提示词';
+    var s=ci.prompt?ci.prompt:'暂无提示词';
     var is='images/'+ci.category+'/'+ci.image_folder+'/output.jpg';
     var ck=getCaseKey(ci);
     var vc=getViewCount(ck);
