@@ -62,15 +62,15 @@ nav .badge:hover{background:rgba(94,106,210,.2);border-color:rgba(94,106,210,.4)
 .card-body .view-count svg{width:11px;height:11px;flex-shrink:0;opacity:.7}
 .card-body .view-count.hot{color:var(--accent2)}
 .card-body .view-count.hot svg{opacity:1}
-.prompt-preview{margin-top:6px;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:10px;color:var(--text4);font-family:'JetBrains Mono','Fira Code',monospace;line-height:1.4;max-height:120px;overflow:hidden;cursor:pointer;position:relative;transition:color .15s}
+.prompt-preview{margin-top:6px;background:rgba(0,0,0,.25);border:1px solid var(--border);border-radius:4px;padding:5px 8px;font-size:10px;color:var(--text4);font-family:'JetBrains Mono','Fira Code',monospace;line-height:1.4;max-height:60px;overflow:hidden;cursor:pointer;position:relative;transition:color .15s}
 .prompt-preview:hover{color:var(--text3)}
-.prompt-preview::after{content:'';position:absolute;bottom:0;left:0;right:0;height:48px;background:linear-gradient(transparent,rgba(0,0,0,.5))}
+.prompt-preview::after{content:'';position:absolute;bottom:0;left:0;right:0;height:24px;background:linear-gradient(transparent,rgba(0,0,0,.5))}
 .prompt-preview .expand-icon{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:12px;;background:linear-gradient(transparent,rgba(0,0,0,.5))}
 .prompt-preview .expand-icon{position:absolute;right:6px;top:50%;transform:translateY(-50%);width:12px;height:12px;color:var(--text4);transition:transform .2s,color .15s;flex-shrink:0;animation:expandBounce 2s ease-in-out infinite}
 .prompt-preview:hover .expand-icon{color:var(--text3);animation:none}
 .prompt-preview.expanded .expand-icon{transform:translateY(-50%) rotate(180deg);animation:none}
 @keyframes expandBounce{0%,100%{transform:translateY(-50%)}50%{transform:translateY(-35%)}}
-.prompt-full{display:none;margin-top:6px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:4px;padding:8px;font-size:10px;color:var(--text3);font-family:'JetBrains Mono','Fira Code',monospace;line-height:1.5;white-space:pre-wrap;max-height:500px;overflow-y:auto}
+.prompt-full{display:none;margin-top:6px;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:4px;padding:8px;font-size:10px;color:var(--text3);font-family:'JetBrains Mono','Fira Code',monospace;line-height:1.5;white-space:pre-wrap;max-height:250px;overflow-y:auto}
 .prompt-full.show{display:block}
 .add-case-btn{display:flex;align-items:center;justify-content:center;gap:8px;margin:24px auto;padding:10px 24px;border-radius:var(--radius-lg);border:1px dashed rgba(94,106,210,.4);background:rgba(94,106,210,.06);color:var(--accent2);cursor:pointer;font-family:inherit;font-size:13px;font-weight:500;transition:all .2s;width:fit-content;line-height:1.4}
 .add-case-btn:hover{background:rgba(94,106,210,.14);border-color:var(--accent2);border-style:solid;transform:translateY(-2px);box-shadow:0 4px 16px rgba(94,106,210,.15)}
